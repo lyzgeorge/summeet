@@ -16,7 +16,7 @@ load_dotenv()
 from models import get_db, Transcription
 from services import convert_to_mp3, transcribe_audio, summarize_meeting, save_summary_as_markdown
 
-app = FastAPI(title="Meeting Summarizer API", version="1.0.0")
+app = FastAPI(title="Summeet API", version="1.0.0")
 
 # CORS middleware
 app.add_middleware(
@@ -29,7 +29,7 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    return {"message": "Meeting Summarizer API", "version": "1.0.0"}
+    return {"message": "Summeet API", "version": "1.0.0"}
 
 @app.post("/upload")
 async def upload_audio(
@@ -207,7 +207,7 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    print("🚀 Starting Meeting Summarizer API...")
+    print("🚀 Starting Summeet API...")
     print("📋 Press Ctrl+C to stop the server")
     
     try:
@@ -217,4 +217,4 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n❌ Server error: {e}")
     finally:
-        print("👋 Meeting Summarizer API shutdown complete")
+        print("👋 Summeet API shutdown complete")

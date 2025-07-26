@@ -1,6 +1,6 @@
-# Contributing to Meeting Summarizer
+# Contributing to Summeet
 
-Thank you for considering contributing to Meeting Summarizer! We welcome contributions from everyone.
+Thank you for considering contributing to Summeet! We welcome contributions from everyone.
 
 ## How to Contribute
 
@@ -25,8 +25,8 @@ Thank you for considering contributing to Meeting Summarizer! We welcome contrib
 1. **Fork the repository** on GitHub
 2. **Clone your fork** locally:
    ```bash
-   git clone https://github.com/yourusername/meeting-summarizer.git
-   cd meeting-summarizer
+   git clone https://github.com/yourusername/summeet.git
+   cd summeet
    ```
 3. **Set up development environment**:
    ```bash
@@ -132,7 +132,7 @@ docker compose -f docker-compose.simple.yml up --build
 ## Project Structure
 
 ```
-meeting-summarizer/
+summeet/
 ├── backend/                 # FastAPI backend
 │   ├── main.py             # Main application
 │   ├── models.py           # Database models
@@ -196,4 +196,4 @@ meeting-summarizer/
 - **GitHub Discussions**: For questions and general discussion
 - **Pull Request Comments**: For code-specific questions
 
-Thank you for contributing to Meeting Summarizer! 🎙️
+Thank you for contributing to Summeet! 🎙️

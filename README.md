@@ -1,4 +1,4 @@
-# Meeting Summarizer
+# Summeet
 
 🎙️ **Open-source AI-powered meeting transcription and summarization tool**
 
@@ -27,8 +27,8 @@ Transform your audio recordings into structured meeting summaries with automatic
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/yourusername/meeting-summarizer.git
-   cd meeting-summarizer
+   git clone https://github.com/lyzgeorge/summeet.git
+   cd summeet
    ```
 
 2. **Set up environment variables**:
@@ -125,7 +125,7 @@ Once running, visit http://localhost:8000/docs for interactive API documentation
 ### Project Structure
 
 ```
-meeting-summarizer/
+summeet/
 ├── backend/                 # FastAPI backend
 │   ├── main.py             # Main application file
 │   ├── models.py           # Database models
@@ -213,8 +213,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/meeting-summarizer/issues)
-- 💬 **Questions**: [GitHub Discussions](https://github.com/yourusername/meeting-summarizer/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/lyzgeorge/summeet/issues)
+- 💬 **Questions**: [GitHub Discussions](https://github.com/lyzgeorge/summeet/discussions)
 - 📧 **Security Issues**: Report privately via email
 
 ---
