@@ -16,5 +16,4 @@ services:
     volumes:
       # Persist SQLite database
       - ./data:/app/data
-      - ./database.db:/app/database.db
     restart: unless-stopped

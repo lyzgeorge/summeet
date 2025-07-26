@@ -27,6 +27,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy backend application
 COPY backend/ ./
 
+# Create data directory with proper permissions
+RUN mkdir -p /app/data && chmod 755 /app/data
+
 # Copy built frontend from build stage
 COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
 
