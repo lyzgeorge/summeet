@@ -1,5 +1,5 @@
 # Multi-stage build for single container deployment
-FROM node:18-alpine as frontend-build
+FROM node:18-alpine AS frontend-build
 
 # Build frontend
 WORKDIR /app/frontend
@@ -38,6 +38,9 @@ RUN echo 'server { \
     listen 80; \
     server_name localhost; \
     \
+    # Increase file upload size limit \
+    client_max_body_size 100M; \
+    \
     root /usr/share/nginx/html; \
     index index.html; \
     \
@@ -53,6 +56,9 @@ RUN echo 'server { \
         proxy_set_header X-Real-IP $remote_addr; \
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
         proxy_set_header X-Forwarded-Proto $scheme; \
+        proxy_request_buffering off; \
+        proxy_read_timeout 300s; \
+        proxy_connect_timeout 75s; \
     } \
     \
     # Static files caching \

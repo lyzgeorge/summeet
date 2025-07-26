@@ -38,9 +38,15 @@ async def upload_audio(
 ):
     """Upload and transcribe audio file"""
     try:
-        # Save uploaded file temporarily
+        # Save uploaded file temporarily and check size
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp_file:
             content = await file.read()
+            
+            # Check file size (limit: 100MB)
+            MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB in bytes
+            if len(content) > MAX_FILE_SIZE:
+                raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
+            
             tmp_file.write(content)
             tmp_file_path = tmp_file.name
 
