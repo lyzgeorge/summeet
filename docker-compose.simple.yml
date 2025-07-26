@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  meeting-summarizer:
+    build: .
+    ports:
+      - "3000:80"
+    environment:
+      # API Keys (Required)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY}
+      
+      # Model Configuration
+      - TEXT_MODEL_NAME=${TEXT_MODEL_NAME:-gpt-4o-mini}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+    volumes:
+      # Persist SQLite database
+      - ./data:/app/data
+      - ./database.db:/app/database.db
+    restart: unless-stopped
