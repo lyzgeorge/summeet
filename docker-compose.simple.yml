@@ -9,10 +9,19 @@ services:
       # API Keys (Required)
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - ASSEMBLYAI_API_KEY=${ASSEMBLYAI_API_KEY}
-      
       # Model Configuration
       - TEXT_MODEL_NAME=${TEXT_MODEL_NAME:-gpt-4o-mini}
       - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      # JWT Configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-here-change-in-production}
+      # Database Configuration (PostgreSQL)
+      - DB_NAME=${DB_NAME:-your_db_name}
+      - DB_USER=${DB_USER:-your_db_user}
+      - DB_PASSWORD=${DB_PASSWORD:-your_db_password}
+      - DB_HOST=${DB_HOST:-localhost}
+      - DB_PORT=${DB_PORT:-5432}
+      # Data Directory
+      - DATA_DIR=${DATA_DIR:-/app/data}
     volumes:
       # Persist SQLite database
       - ./data:/app/data
