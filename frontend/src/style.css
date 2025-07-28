@@ -528,7 +528,7 @@
      ================================ */
   .markdown-content {
     line-height: 1.7;
-    max-width: 65ch;
+    width: 100%;
   }
 
   .markdown-content h1 {

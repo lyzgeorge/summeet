@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex-col">
+  <div class="min-h-screen flex flex-col">
     <!-- Header -->
     <header class="header sticky top-0 z-10">
       <div class="container-wide header-content flex items-center justify-between py-4">
