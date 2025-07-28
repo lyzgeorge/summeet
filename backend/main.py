@@ -1,13 +1,15 @@
-from fastapi import FastAPI, File, UploadFile, Depends, HTTPException
+from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import os
 import tempfile
 import signal
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
+from typing import Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -15,6 +17,7 @@ load_dotenv()
 
 from models import get_db, Transcription
 from services import convert_to_mp3, transcribe_audio, summarize_meeting, save_summary_as_markdown
+from auth import verify_user, create_access_token, verify_token
 
 app = FastAPI(title="Summeet API", version="1.0.0")
 
@@ -27,14 +30,69 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Security
+security = HTTPBearer()
+
+# Pydantic models for authentication
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_email: str
+
+# Authentication dependency
+async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    """Get current user from JWT token"""
+    token = credentials.credentials
+    user_email = verify_token(token)
+    if not user_email:
+        raise HTTPException(
+            status_code=401, 
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return user_email
+
 @app.get("/")
 async def root():
     return {"message": "Summeet API", "version": "1.0.0"}
 
+@app.post("/login", response_model=LoginResponse)
+async def login(request: LoginRequest):
+    """Authenticate user and return JWT token"""
+    try:
+        # Verify user credentials
+        if not verify_user(request.email, request.password):
+            raise HTTPException(
+                status_code=401, 
+                detail="Invalid email or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Create access token
+        access_token = create_access_token(
+            data={"sub": request.email},
+            expires_delta=timedelta(minutes=30)
+        )
+        
+        return LoginResponse(
+            access_token=access_token,
+            user_email=request.email
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
 @app.post("/upload")
 async def upload_audio(
     file: UploadFile = File(...),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Upload and transcribe audio file"""
     try:
@@ -89,7 +147,8 @@ class DirectTranscriptRequest(BaseModel):
 @app.post("/transcript")
 async def save_direct_transcript(
     request: DirectTranscriptRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Save direct transcript input to database"""
     try:
@@ -117,7 +176,8 @@ async def save_direct_transcript(
 @app.get("/transcription/{transcription_id}")
 async def get_transcription(
     transcription_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Get transcription by ID"""
     transcription = db.query(Transcription).filter(Transcription.id == transcription_id).first()
@@ -138,7 +198,8 @@ async def create_summary(
     transcription_id: int,
     language: str = "en", 
     temperature: float = 0.8,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Generate summary for transcription"""
     transcription = db.query(Transcription).filter(Transcription.id == transcription_id).first()
@@ -177,7 +238,8 @@ async def create_summary(
 @app.get("/export/{transcription_id}")
 async def export_markdown(
     transcription_id: int,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user)
 ):
     """Export transcription as markdown file"""
     transcription = db.query(Transcription).filter(Transcription.id == transcription_id).first()

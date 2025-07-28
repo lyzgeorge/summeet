@@ -10,6 +10,49 @@ const api = axios.create({
   },
 })
 
+// Token management
+const TOKEN_KEY = 'summeet_access_token'
+const USER_EMAIL_KEY = 'summeet_user_email'
+
+export const tokenManager = {
+  getToken: () => localStorage.getItem(TOKEN_KEY),
+  setToken: (token) => localStorage.setItem(TOKEN_KEY, token),
+  removeToken: () => localStorage.removeItem(TOKEN_KEY),
+  getUserEmail: () => localStorage.getItem(USER_EMAIL_KEY),
+  setUserEmail: (email) => localStorage.setItem(USER_EMAIL_KEY, email),
+  removeUserEmail: () => localStorage.removeItem(USER_EMAIL_KEY),
+  isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
+  clearAuth: () => {
+    localStorage.removeItem(TOKEN_KEY)
+    localStorage.removeItem(USER_EMAIL_KEY)
+  }
+}
+
+// Add request interceptor to include auth token
+api.interceptors.request.use(
+  (config) => {
+    const token = tokenManager.getToken()
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
+)
+
+// Add response interceptor to handle auth errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      tokenManager.clearAuth()
+      // Redirect to login or emit event
+      window.dispatchEvent(new CustomEvent('auth-expired'))
+    }
+    return Promise.reject(error)
+  }
+)
+
 export const transcriptionAPI = {
   upload: async (file) => {
     const formData = new FormData()
@@ -50,6 +93,27 @@ export const transcriptionAPI = {
     })
     return response.data
   },
+}
+
+export const authAPI = {
+  login: async (email, password) => {
+    const response = await api.post('/login', { email, password })
+    const { access_token, user_email } = response.data
+    
+    // Store token and user info
+    tokenManager.setToken(access_token)
+    tokenManager.setUserEmail(user_email)
+    
+    return response.data
+  },
+  
+  logout: () => {
+    tokenManager.clearAuth()
+  },
+  
+  isAuthenticated: () => tokenManager.isAuthenticated(),
+  
+  getCurrentUser: () => tokenManager.getUserEmail()
 }
 
 export const appAPI = {

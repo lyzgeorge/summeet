@@ -33,8 +33,14 @@
         </div>
 
         <div class="flex items-center gap-4">
-          <div class="badge badge-success">
-            Open Source
+          <div v-if="isAuthenticated" class="flex items-center gap-3">
+            <span class="text-sm text-primary">{{ currentUser }}</span>
+            <button 
+              @click="handleLogout"
+              class="text-sm text-muted hover:text-primary transition-colors"
+            >
+              Sign out
+            </button>
           </div>
         </div>
       </div>
@@ -42,7 +48,13 @@
 
     <!-- Main Content -->
     <main class="container-wide py-12 flex-1 w-full">
-      <div class="space-y-12 w-full">
+      <!-- Show login form if not authenticated -->
+      <div v-if="!isAuthenticated">
+        <LoginForm @login-success="handleLoginSuccess" />
+      </div>
+      
+      <!-- Show main app if authenticated -->
+      <div v-else class="space-y-12 w-full">
         <!-- Input Methods Selection -->
         <section v-if="!currentTranscription" class="animate-fade-in max-w-6xl mx-auto">
           
@@ -128,11 +140,13 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AudioUpload from './components/AudioUpload.vue'
 import DirectTranscriptInput from './components/DirectTranscriptInput.vue'
 import TranscriptEditor from './components/TranscriptEditor.vue'
 import SummaryPanel from './components/SummaryPanel.vue'
+import LoginForm from './components/LoginForm.vue'
+import { authAPI } from './api.js'
 
 export default {
   name: 'App',
@@ -140,11 +154,29 @@ export default {
     AudioUpload,
     DirectTranscriptInput,
     TranscriptEditor,
-    SummaryPanel
+    SummaryPanel,
+    LoginForm
   },
   setup() {
     const currentTranscription = ref(null)
     const currentSummary = ref(null)
+    const isAuthenticated = ref(false)
+    const currentUser = ref('')
+
+    const checkAuthStatus = () => {
+      isAuthenticated.value = authAPI.isAuthenticated()
+      currentUser.value = authAPI.getCurrentUser() || ''
+    }
+
+    const handleLoginSuccess = () => {
+      checkAuthStatus()
+    }
+
+    const handleLogout = () => {
+      authAPI.logout()
+      checkAuthStatus()
+      resetToInput()
+    }
 
     const handleTranscriptionComplete = (transcriptionData) => {
       currentTranscription.value = transcriptionData
@@ -165,9 +197,24 @@ export default {
       currentSummary.value = null
     }
 
+    // Handle auth expiration events
+    const handleAuthExpired = () => {
+      checkAuthStatus()
+      resetToInput()
+    }
+
+    onMounted(() => {
+      checkAuthStatus()
+      window.addEventListener('auth-expired', handleAuthExpired)
+    })
+
     return {
       currentTranscription,
       currentSummary,
+      isAuthenticated,
+      currentUser,
+      handleLoginSuccess,
+      handleLogout,
       handleTranscriptionComplete,
       handleDirectTranscript,
       handleSummaryGenerated,
