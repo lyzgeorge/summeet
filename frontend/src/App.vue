@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col w-full">
     <!-- Header -->
     <header class="header sticky top-0 z-10">
       <div class="container-wide header-content flex items-center justify-between py-4">
@@ -41,12 +41,12 @@
     </header>
 
     <!-- Main Content -->
-    <main class="container-wide py-12 flex-1">
-      <div class="space-y-12">
+    <main class="container-wide py-12 flex-1 w-full">
+      <div class="space-y-12 w-full">
         <!-- Input Methods Selection -->
-        <section v-if="!currentTranscription" class="animate-fade-in">
+        <section v-if="!currentTranscription" class="animate-fade-in max-w-6xl mx-auto">
           
-          <div class="grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-6xl mx-auto">
+          <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
             <!-- Audio Upload Option -->
             <div class="card animate-slide-up">
               <div class="card-header-success">
@@ -90,16 +90,16 @@
         </section>
 
         <!-- Transcript Editor -->
-        <section v-if="currentTranscription" class="animate-fade-in">
-          <TranscriptEditor 
-            :transcription-data="currentTranscription"
-            @summary-generated="handleSummaryGenerated"
-            @back-to-input="resetToInput"
-          />
+        <section v-if="currentTranscription" class="animate-fade-in max-w-6xl mx-auto">
+            <TranscriptEditor 
+              :transcription-data="currentTranscription"
+              @summary-generated="handleSummaryGenerated"
+              @back-to-input="resetToInput"
+            />
         </section>
 
         <!-- Summary Panel -->
-        <section v-if="currentSummary" class="animate-fade-in">
+        <section v-if="currentSummary" class="animate-fade-in max-w-6xl mx-auto">
           <SummaryPanel 
             :summary-data="currentSummary" 
             @new-session="resetToInput"
@@ -120,7 +120,7 @@
             </div>
             <span class="text-mono text-primary font-medium">Summeet</span>
           </div>
-          <span class="text-secondary">&copy; 2024 AI-powered transcription & summarization platform</span>
+          <span class="text-secondary">&copy; 2025 AI-powered transcription & summarization platform</span>
         </div>
       </div>
     </footer>

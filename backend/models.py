@@ -4,11 +4,14 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime
 import os
 
+# Get data directory from environment variable, default to /app/data
+DATA_DIR = os.getenv("DATA_DIR", "/app/data")
+
 # Ensure data directory exists
-os.makedirs("/app/data", exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)
 
 # SQLite database configuration
-DATABASE_URL = "sqlite:///./data/database.db"
+DATABASE_URL = f"sqlite:///{DATA_DIR}/database.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

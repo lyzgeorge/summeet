@@ -1,5 +1,5 @@
 <template>
-  <div class="card max-w-6xl mx-auto">
+  <div class="card w-full">
     <div class="card-header-primary">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-3">
