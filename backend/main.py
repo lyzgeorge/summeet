@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from models import get_db, Transcription
-from services import convert_to_mp3, transcribe_audio, summarize_meeting, save_summary_as_markdown
+from services import convert_to_mp3, transcribe_audio, summarize_meeting, save_summary_as_markdown, print_with_timestamp
 from auth import verify_user, create_access_token, verify_token
 
 app = FastAPI(title="Summeet API", version="1.0.0")
@@ -100,10 +100,10 @@ async def upload_audio(
         with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file.filename}") as tmp_file:
             content = await file.read()
             
-            # Check file size (limit: 100MB)
-            MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB in bytes
+            # Check file size (limit: 200MB)
+            MAX_FILE_SIZE = 200 * 1024 * 1024  # 200MB in bytes
             if len(content) > MAX_FILE_SIZE:
-                raise HTTPException(status_code=413, detail="File too large. Maximum size is 100MB.")
+                raise HTTPException(status_code=413, detail="File too large. Maximum size is 200MB.")
             
             tmp_file.write(content)
             tmp_file_path = tmp_file.name
@@ -265,7 +265,7 @@ async def export_markdown(
 
 def signal_handler(sig, frame):
     """Handle SIGINT (Ctrl+C) and SIGTERM signals"""
-    print("\n🛑 Received shutdown signal. Gracefully shutting down...")
+    print_with_timestamp("\n🛑 Received shutdown signal. Gracefully shutting down...")
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -275,14 +275,14 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, signal_handler)
     signal.signal(signal.SIGTERM, signal_handler)
     
-    print("🚀 Starting Summeet API...")
-    print("📋 Press Ctrl+C to stop the server")
+    print_with_timestamp("🚀 Starting Summeet API...")
+    print_with_timestamp("📋 Press Ctrl+C to stop the server")
     
     try:
         uvicorn.run(app, host="0.0.0.0", port=8000)
     except KeyboardInterrupt:
-        print("\n🛑 Server stopped by user")
+        print_with_timestamp("\n🛑 Server stopped by user")
     except Exception as e:
-        print(f"\n❌ Server error: {e}")
+        print_with_timestamp(f"\n❌ Server error: {e}")
     finally:
-        print("👋 Summeet API shutdown complete")
+        print_with_timestamp("👋 Summeet API shutdown complete")

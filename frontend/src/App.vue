@@ -140,7 +140,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AudioUpload from './components/AudioUpload.vue'
 import DirectTranscriptInput from './components/DirectTranscriptInput.vue'
 import TranscriptEditor from './components/TranscriptEditor.vue'
@@ -198,7 +198,11 @@ export default {
     }
 
     // Handle auth expiration events
-    const handleAuthExpired = () => {
+    const handleAuthExpired = (event) => {
+      // Force logout regardless of token state when auth expires
+      if (event?.detail?.forceLogout) {
+        authAPI.logout()
+      }
       checkAuthStatus()
       resetToInput()
     }
@@ -206,6 +210,10 @@ export default {
     onMounted(() => {
       checkAuthStatus()
       window.addEventListener('auth-expired', handleAuthExpired)
+    })
+
+    onUnmounted(() => {
+      window.removeEventListener('auth-expired', handleAuthExpired)
     })
 
     return {

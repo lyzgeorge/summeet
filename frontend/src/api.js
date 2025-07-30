@@ -8,6 +8,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 15 * 60 * 1000, // 15 minutes timeout
 })
 
 // Token management
@@ -46,8 +47,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       tokenManager.clearAuth()
-      // Redirect to login or emit event
-      window.dispatchEvent(new CustomEvent('auth-expired'))
+      // Force update authentication state immediately
+      window.dispatchEvent(new CustomEvent('auth-expired', { detail: { forceLogout: true } }))
     }
     return Promise.reject(error)
   }

@@ -135,6 +135,13 @@ export default {
     const uploadAndTranscribe = async () => {
       if (!selectedFile.value) return
 
+      // Check file size (200MB limit)
+      const MAX_FILE_SIZE = 200 * 1024 * 1024 // 200MB in bytes
+      if (selectedFile.value.size > MAX_FILE_SIZE) {
+        showStatus('❌ File too large. Maximum size is 200MB.', 'error')
+        return
+      }
+
       isProcessing.value = true
       processingMessage.value = 'Uploading and transcribing...'
       clearStatus()

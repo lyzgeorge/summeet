@@ -6,6 +6,11 @@ from openai import OpenAI
 from datetime import datetime
 import json
 
+def print_with_timestamp(message):
+    """Print message with readable timestamp"""
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(f"[{timestamp}] {message}")
+
 # API Configuration
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "openai_api_key")
 OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1")
@@ -35,21 +40,21 @@ def initialize_openai_client():
                 messages=[{"role": "user", "content": "Test"}],
                 max_tokens=5
             )
-            print(f"✅ OpenAI client connection test successful")
-            print(f"✅ Initialized OpenAI client with base URL: {OPENAI_BASE_URL}")
-            print(f"✅ Using model: {TEXT_MODEL_NAME}")
+            print_with_timestamp(f"✅ OpenAI client connection test successful")
+            print_with_timestamp(f"✅ Initialized OpenAI client with base URL: {OPENAI_BASE_URL}")
+            print_with_timestamp(f"✅ Using model: {TEXT_MODEL_NAME}")
         except Exception as test_error:
-            print(f"⚠️ Client created but connection test failed: {test_error}")
-            print(f"✅ Initialized OpenAI client with base URL: {OPENAI_BASE_URL}")
-            print(f"✅ Using model: {TEXT_MODEL_NAME}")
+            print_with_timestamp(f"⚠️ Client created but connection test failed: {test_error}")
+            print_with_timestamp(f"✅ Initialized OpenAI client with base URL: {OPENAI_BASE_URL}")
+            print_with_timestamp(f"✅ Using model: {TEXT_MODEL_NAME}")
             # Still return True as the client was created successfully
         
         return True
         
     except Exception as e:
-        print(f"❌ Error initializing OpenAI client: {e}")
-        print(f"OPENAI_API_KEY set: {'Yes' if OPENAI_API_KEY and OPENAI_API_KEY != 'openai_api_key' else 'No'}")
-        print(f"OPENAI_BASE_URL: {OPENAI_BASE_URL}")
+        print_with_timestamp(f"❌ Error initializing OpenAI client: {e}")
+        print_with_timestamp(f"OPENAI_API_KEY set: {'Yes' if OPENAI_API_KEY and OPENAI_API_KEY != 'openai_api_key' else 'No'}")
+        print_with_timestamp(f"OPENAI_BASE_URL: {OPENAI_BASE_URL}")
         client = None
         return False
 
@@ -60,10 +65,10 @@ initialize_openai_client()
 try:
     aai.settings.api_key = ASSEMBLYAI_API_KEY
     aai.settings.http_timeout = 900  # 15 minutes
-    print(f"✅ Initialized AssemblyAI client")
-    print(f"ASSEMBLYAI_API_KEY set: {'Yes' if ASSEMBLYAI_API_KEY and ASSEMBLYAI_API_KEY != 'assemblyai_api_key' else 'No'}")
+    print_with_timestamp(f"✅ Initialized AssemblyAI client")
+    print_with_timestamp(f"ASSEMBLYAI_API_KEY set: {'Yes' if ASSEMBLYAI_API_KEY and ASSEMBLYAI_API_KEY != 'assemblyai_api_key' else 'No'}")
 except Exception as e:
-    print(f"❌ Error initializing AssemblyAI: {e}")
+    print_with_timestamp(f"❌ Error initializing AssemblyAI: {e}")
 
 # System prompts for meeting summarization
 SYSTEM_PROMPTS = {
@@ -164,7 +169,7 @@ def clean_temp_files(file_list):
             if file_path and os.path.exists(file_path):
                 os.unlink(file_path)
         except Exception as e:
-            print(f"Warning: Could not delete temp file {file_path}: {e}")
+            print_with_timestamp(f"Warning: Could not delete temp file {file_path}: {e}")
             pass
 
 def transcribe_audio(audio_file, word_boost="", language="auto"):
@@ -194,7 +199,7 @@ def transcribe_audio(audio_file, word_boost="", language="auto"):
 
         # Use transcribe() which waits for the result
         transcript = transcriber.transcribe(mp3_file, config=config)
-        print(f"Transcription id: {transcript.id}")
+        print_with_timestamp(f"Transcription id: {transcript.id}")
 
         # Process the result
         if transcript.status == aai.TranscriptStatus.completed:
@@ -244,7 +249,7 @@ def summarize_meeting(transcript, speaker_table=None, system_prompt_language="en
         return "No transcript available to summarize."
 
     if client is None:
-        print("⚠️ OpenAI client is None, attempting to reinitialize...")
+        print_with_timestamp("⚠️ OpenAI client is None, attempting to reinitialize...")
         if not initialize_openai_client():
             raise RuntimeError(
                 f"OpenAI client is not initialized. Please check your configuration:\n"
@@ -270,9 +275,9 @@ def summarize_meeting(transcript, speaker_table=None, system_prompt_language="en
             {"role": "user", "content": content}
         ]
 
-        print(f"Making OpenAI request with model: {TEXT_MODEL_NAME}")
-        print(f"Messages: {len(messages)} messages")
-        print(f"Temperature: {temperature}")
+        print_with_timestamp(f"Making OpenAI request with model: {TEXT_MODEL_NAME}")
+        print_with_timestamp(f"Messages: {len(messages)} messages")
+        print_with_timestamp(f"Temperature: {temperature}")
         
         response = client.chat.completions.create(
             model=TEXT_MODEL_NAME,
@@ -280,7 +285,7 @@ def summarize_meeting(transcript, speaker_table=None, system_prompt_language="en
             temperature=temperature
         )
         
-        print(f"OpenAI response received successfully")
+        print_with_timestamp(f"OpenAI response received successfully")
         summary = response.choices[0].message.content.strip()
         
         if not summary:
@@ -307,8 +312,8 @@ def save_summary_as_markdown(transcript, summary, filename_base=None):
     try:
         with open(file_path, "w", encoding="utf-8") as f:
             f.write(content)
-        print(f"Summary saved to: {file_path}")
+        print_with_timestamp(f"Summary saved to: {file_path}")
         return file_path
     except Exception as e:
-        print(f"Error saving markdown file: {e}")
+        print_with_timestamp(f"Error saving markdown file: {e}")
         raise RuntimeError(f"Error saving markdown file: {e}")

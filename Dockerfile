@@ -39,7 +39,7 @@ RUN echo 'server { \
     server_name localhost; \
     \
     # Increase file upload size limit \
-    client_max_body_size 100M; \
+    client_max_body_size 200M; \
     \
     root /usr/share/nginx/html; \
     index index.html; \
