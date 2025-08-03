@@ -23,6 +23,20 @@ export const tokenManager = {
   setUserEmail: (email) => localStorage.setItem(USER_EMAIL_KEY, email),
   removeUserEmail: () => localStorage.removeItem(USER_EMAIL_KEY),
   isAuthenticated: () => !!localStorage.getItem(TOKEN_KEY),
+  isTokenValid: () => {
+    const token = tokenManager.getToken()
+    if (!token) return false
+    
+    try {
+      // Decode JWT token to check expiration
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      const now = Math.floor(Date.now() / 1000)
+      return payload.exp > now
+    } catch (error) {
+      // If token is malformed or can't be decoded, it's invalid
+      return false
+    }
+  },
   clearAuth: () => {
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_EMAIL_KEY)
@@ -113,6 +127,12 @@ export const authAPI = {
   },
   
   isAuthenticated: () => tokenManager.isAuthenticated(),
+  
+  isTokenValid: () => tokenManager.isTokenValid(),
+  
+  isValidSession: () => {
+    return tokenManager.isAuthenticated() && tokenManager.isTokenValid()
+  },
   
   getCurrentUser: () => tokenManager.getUserEmail()
 }

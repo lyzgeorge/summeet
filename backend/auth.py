@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 # JWT Configuration
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "your-secret-key-here-change-in-production")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 7 * 24 * 60  # 1 week in minutes
 
 # Database Configuration
 DB_NAME = os.getenv("DB_NAME", "your_db_name")

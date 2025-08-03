@@ -164,8 +164,17 @@ export default {
     const currentUser = ref('')
 
     const checkAuthStatus = () => {
-      isAuthenticated.value = authAPI.isAuthenticated()
-      currentUser.value = authAPI.getCurrentUser() || ''
+      const isValidSession = authAPI.isValidSession()
+      
+      if (!isValidSession) {
+        // Clear invalid auth state
+        authAPI.logout()
+        isAuthenticated.value = false
+        currentUser.value = ''
+      } else {
+        isAuthenticated.value = true
+        currentUser.value = authAPI.getCurrentUser() || ''
+      }
     }
 
     const handleLoginSuccess = () => {
