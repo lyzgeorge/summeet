@@ -206,29 +206,86 @@ export default {
     const formattedSummary = computed(() => {
       if (!props.summaryData?.summary) return ''
       
-      // Convert markdown-like formatting to clean HTML for prose styling
-      return props.summaryData.summary
-        .replace(/### (.*)/g, '<h3>$1</h3>')
-        .replace(/## (.*)/g, '<h2>$1</h2>')
-        .replace(/# (.*)/g, '<h1>$1</h1>')
+      let content = props.summaryData.summary.trim()
+      
+      // Convert markdown-like formatting to semantic HTML
+      content = content
+        // Headers with proper hierarchy
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        
+        // Text formatting
         .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
         .replace(/\*(.*?)\*/g, '<em>$1</em>')
         .replace(/`(.*?)`/g, '<code>$1</code>')
-        // Convert markdown list items to <li> tags
-        .replace(/^(?:-|\d+\.) (.*)/gm, '<li>$1</li>')
-        // Wrap blocks of <li> tags with <ul> tags
-        .replace(/((?:<li>.*?<\/li>\s*)+)/gs, '<ul>$1</ul>')
-        .replace(/<\/ul>\s*<ul>/g, '<ul>') // Merge consecutive <ul> tags
-        .replace(/\n\n/g, '<\/p><p>')
-        .replace(/^(.*)$/gm, (match, p1) => {
-          if (p1 && !p1.startsWith('<') && p1.trim()) {
-            return `<p>${p1}<\/p>`
-          }
-          return p1
-        })
+        
+        // Blockquotes
+        .replace(/^> (.*$)/gm, '<blockquote><p>$1</p></blockquote>')
+        
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>')
+        
+        // Lists - handle both unordered and ordered
+        .replace(/^- (.*$)/gm, '<li>$1</li>')
+        .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+      
+      // Wrap consecutive list items in proper list containers
+      content = content.replace(/((?:<li>.*?<\/li>\s*)+)/gs, (match) => {
+        // Check if this is part of an ordered list by looking at the original content
+        const originalLines = match.match(/<li>.*?<\/li>/g)
+        if (originalLines) {
+          const firstLine = originalLines[0]
+          const originalText = props.summaryData.summary
+          const liContent = firstLine.replace(/<\/?li>/g, '')
+          const isOrdered = originalText.includes(`1. ${liContent}`) || 
+                           originalText.includes(`2. ${liContent}`) ||
+                           /^\d+\. /.test(originalText.split('\n').find(line => line.includes(liContent)) || '')
+          
+          return isOrdered ? `<ol>${match}</ol>` : `<ul>${match}</ul>`
+        }
+        return `<ul>${match}</ul>`
+      })
+      
+      // Clean up consecutive list containers
+      content = content.replace(/<\/(ul|ol)>\s*<\1>/g, '')
+      
+      // Convert double line breaks to paragraph breaks
+      content = content.replace(/\n\n+/g, '</p><p>')
+      
+      // Wrap remaining text in paragraphs
+      const lines = content.split('\n')
+      const processedLines = lines.map(line => {
+        line = line.trim()
+        if (!line) return ''
+        
+        // Skip if already wrapped in HTML tags
+        if (line.match(/^<(h[1-6]|ul|ol|li|blockquote|hr|\/)/)) {
+          return line
+        }
+        
+        // Skip if it's part of a list or other structure
+        if (line.includes('</p><p>')) {
+          return `<p>${line}</p>`
+        }
+        
+        // Wrap standalone text in paragraphs
+        return `<p>${line}</p>`
+      }).filter(line => line)
+      
+      content = processedLines.join('\n')
+      
+      // Clean up malformed paragraphs
+      content = content
         .replace(/<p><\/p>/g, '')
-        .replace(/<p>(<[hul])/g, '$1')
-        .replace(/(<\/[hul][^>]*>)<\/p>/g, '$1')
+        .replace(/<p>(<h[1-6]>)/g, '$1')
+        .replace(/(<\/h[1-6]>)<\/p>/g, '$1')
+        .replace(/<p>(<ul>|<ol>|<blockquote>|<hr>)/g, '$1')
+        .replace(/(<\/ul>|<\/ol>|<\/blockquote>|<hr>)<\/p>/g, '$1')
+        .replace(/<p><p>/g, '<p>')
+        .replace(/<\/p><\/p>/g, '</p>')
+      
+      return content
     })
 
     const transcriptWordCount = computed(() => {
@@ -249,18 +306,78 @@ export default {
     const formattedPreview = computed(() => {
       if (!editableSummary.value) return ''
       
-      // Convert markdown-like formatting to HTML for preview
-      return editableSummary.value
-        .replace(/### (.*)/g, '<h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">$1</h3>')
-        .replace(/## (.*)/g, '<h2 class="text-xl font-bold text-gray-900 mt-6 mb-3">$1</h2>')
-        .replace(/# (.*)/g, '<h1 class="text-2xl font-bold text-gray-900 mt-8 mb-4">$1</h1>')
-        .replace(/\*\*(.*?)\*\*/g, '<strong class="font-semibold">$1</strong>')
-        .replace(/\*(.*?)\*/g, '<em class="italic">$1</em>')
-        .replace(/`(.*?)`/g, '<code class="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono">$1</code>')
-        .replace(/^- (.*)/gm, '<li class="ml-4 mb-1">$1</li>')
-        .replace(/^\d+\. (.*)/gm, '<li class="ml-4 mb-1">$1</li>')
-        .replace(/\n\n/g, '<br><br>')
-        .replace(/\n/g, '<br>')
+      let content = editableSummary.value.trim()
+      
+      // Convert markdown-like formatting to HTML for preview (matches main formatting)
+      content = content
+        // Headers
+        .replace(/^### (.*$)/gm, '<h3>$1</h3>')
+        .replace(/^## (.*$)/gm, '<h2>$1</h2>')
+        .replace(/^# (.*$)/gm, '<h1>$1</h1>')
+        
+        // Text formatting
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.*?)\*/g, '<em>$1</em>')
+        .replace(/`(.*?)`/g, '<code>$1</code>')
+        
+        // Blockquotes
+        .replace(/^> (.*$)/gm, '<blockquote><p>$1</p></blockquote>')
+        
+        // Horizontal rules
+        .replace(/^---$/gm, '<hr>')
+        
+        // Lists
+        .replace(/^- (.*$)/gm, '<li>$1</li>')
+        .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
+      
+      // Wrap consecutive list items
+      content = content.replace(/((?:<li>.*?<\/li>\s*)+)/gs, (match) => {
+        const originalLines = match.match(/<li>.*?<\/li>/g)
+        if (originalLines) {
+          const firstLine = originalLines[0]
+          const liContent = firstLine.replace(/<\/?li>/g, '')
+          const isOrdered = editableSummary.value.includes(`1. ${liContent}`) || 
+                           editableSummary.value.includes(`2. ${liContent}`) ||
+                           /^\d+\. /.test(editableSummary.value.split('\n').find(line => line.includes(liContent)) || '')
+          
+          return isOrdered ? `<ol>${match}</ol>` : `<ul>${match}</ul>`
+        }
+        return `<ul>${match}</ul>`
+      })
+      
+      // Clean up and wrap in paragraphs
+      content = content.replace(/<\/(ul|ol)>\s*<\1>/g, '')
+      content = content.replace(/\n\n+/g, '</p><p>')
+      
+      const lines = content.split('\n')
+      const processedLines = lines.map(line => {
+        line = line.trim()
+        if (!line) return ''
+        
+        if (line.match(/^<(h[1-6]|ul|ol|li|blockquote|hr|\/)/)) {
+          return line
+        }
+        
+        if (line.includes('</p><p>')) {
+          return `<p>${line}</p>`
+        }
+        
+        return `<p>${line}</p>`
+      }).filter(line => line)
+      
+      content = processedLines.join('\n')
+      
+      // Clean up
+      content = content
+        .replace(/<p><\/p>/g, '')
+        .replace(/<p>(<h[1-6]>)/g, '$1')
+        .replace(/(<\/h[1-6]>)<\/p>/g, '$1')
+        .replace(/<p>(<ul>|<ol>|<blockquote>|<hr>)/g, '$1')
+        .replace(/(<\/ul>|<\/ol>|<\/blockquote>|<hr>)<\/p>/g, '$1')
+        .replace(/<p><p>/g, '<p>')
+        .replace(/<\/p><\/p>/g, '</p>')
+      
+      return content
     })
 
     // Watch for summary data changes
