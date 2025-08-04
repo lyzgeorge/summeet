@@ -2,6 +2,7 @@ from fastapi import FastAPI, File, UploadFile, Depends, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 import os
@@ -20,6 +21,10 @@ from services import convert_to_mp3, transcribe_audio, summarize_meeting, save_s
 from auth import verify_user, create_access_token, verify_token
 
 app = FastAPI(title="Summeet API", version="1.0.0")
+
+# Mount static files (frontend)
+if os.path.exists("static"):
+    app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # CORS middleware
 app.add_middleware(
@@ -56,11 +61,35 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         )
     return user_email
 
-@app.get("/")
+@app.get("/api")
 async def root():
     return {"message": "Summeet API", "version": "1.0.0"}
 
-@app.post("/login", response_model=LoginResponse)
+# Serve frontend for all non-API routes
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve the Vue.js frontend for all non-API routes"""
+    # If it's an API route, let it be handled by other endpoints
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # Check if static directory exists
+    if not os.path.exists("static"):
+        raise HTTPException(status_code=404, detail="Frontend not built")
+    
+    # Try to serve the requested file
+    file_path = os.path.join("static", full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # For SPA routing, serve index.html for any non-file requests
+    index_path = os.path.join("static", "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+    
+    raise HTTPException(status_code=404, detail="Frontend not found")
+
+@app.post("/api/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
     """Authenticate user and return JWT token"""
     try:
@@ -88,7 +117,7 @@ async def login(request: LoginRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
-@app.post("/upload")
+@app.post("/api/upload")
 async def upload_audio(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
@@ -144,7 +173,7 @@ class DirectTranscriptRequest(BaseModel):
     transcript: str
     speakers: str = "[]"
 
-@app.post("/transcript")
+@app.post("/api/transcript")
 async def save_direct_transcript(
     request: DirectTranscriptRequest,
     db: Session = Depends(get_db),
@@ -173,7 +202,7 @@ async def save_direct_transcript(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/transcription/{transcription_id}")
+@app.get("/api/transcription/{transcription_id}")
 async def get_transcription(
     transcription_id: int,
     db: Session = Depends(get_db),
@@ -193,7 +222,7 @@ async def get_transcription(
         "created_at": transcription.created_at
     }
 
-@app.post("/summarize/{transcription_id}")
+@app.post("/api/summarize/{transcription_id}")
 async def create_summary(
     transcription_id: int,
     language: str = "en", 
@@ -235,7 +264,7 @@ async def create_summary(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/export/{transcription_id}")
+@app.get("/api/export/{transcription_id}")
 async def export_markdown(
     transcription_id: int,
     db: Session = Depends(get_db),

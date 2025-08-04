@@ -1,4 +1,4 @@
-# Multi-stage build for single container deployment
+# Multi-stage build for backend-only deployment
 FROM node:18-alpine AS frontend-build
 
 # Build frontend
@@ -8,13 +8,12 @@ RUN npm install
 COPY frontend/ ./
 RUN npm run build
 
-# Production stage - Python with built frontend
+# Production stage - Python backend only
 FROM python:3.12-slim
 
-# Install system dependencies
+# Install system dependencies (removed nginx)
 RUN apt-get update && apt-get install -y \
     ffmpeg \
-    nginx \
     && rm -rf /var/lib/apt/lists/*
 
 # Create app directory
@@ -30,56 +29,11 @@ COPY backend/ ./
 # Create data directory with proper permissions
 RUN mkdir -p /app/data && chmod 755 /app/data
 
-# Copy built frontend from build stage
-COPY --from=frontend-build /app/frontend/dist /usr/share/nginx/html
+# Copy built frontend to serve statically from FastAPI
+COPY --from=frontend-build /app/frontend/dist ./static
 
-# Create nginx configuration for single container
-RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    \
-    # Increase file upload size limit \
-    client_max_body_size 200M; \
-    \
-    root /usr/share/nginx/html; \
-    index index.html; \
-    \
-    # Handle Vue.js SPA routing \
-    location / { \
-        try_files $uri $uri/ /index.html; \
-    } \
-    \
-    # Proxy API requests to backend \
-    location /api/ { \
-        proxy_pass http://localhost:8000/; \
-        proxy_set_header Host $host; \
-        proxy_set_header X-Real-IP $remote_addr; \
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for; \
-        proxy_set_header X-Forwarded-Proto $scheme; \
-        proxy_request_buffering off; \
-        proxy_read_timeout 300s; \
-        proxy_connect_timeout 75s; \
-    } \
-    \
-    # Static files caching \
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ { \
-        expires 1y; \
-        add_header Cache-Control "public, immutable"; \
-    } \
-}' > /etc/nginx/sites-available/default
+# Expose port 8000 for the FastAPI backend
+EXPOSE 8000
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-# Start nginx in background\n\
-nginx -g "daemon off;" &\n\
-\n\
-# Start FastAPI backend\n\
-cd /app\n\
-uvicorn main:app --host 0.0.0.0 --port 8000\n\
-' > /start.sh && chmod +x /start.sh
-
-# Expose port 80 for the web interface
-EXPOSE 80
-
-# Start both services
-CMD ["/start.sh"]
+# Start FastAPI backend only
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
