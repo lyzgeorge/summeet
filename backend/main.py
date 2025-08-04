@@ -65,30 +65,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 async def root():
     return {"message": "Summeet API", "version": "1.0.0"}
 
-# Serve frontend for all non-API routes
-@app.get("/{full_path:path}")
-async def serve_frontend(full_path: str):
-    """Serve the Vue.js frontend for all non-API routes"""
-    # If it's an API route, let it be handled by other endpoints
-    if full_path.startswith("api/"):
-        raise HTTPException(status_code=404, detail="API endpoint not found")
-    
-    # Check if static directory exists
-    if not os.path.exists("static"):
-        raise HTTPException(status_code=404, detail="Frontend not built")
-    
-    # Try to serve the requested file
-    file_path = os.path.join("static", full_path)
-    if os.path.isfile(file_path):
-        return FileResponse(file_path)
-    
-    # For SPA routing, serve index.html for any non-file requests
-    index_path = os.path.join("static", "index.html")
-    if os.path.isfile(index_path):
-        return FileResponse(index_path)
-    
-    raise HTTPException(status_code=404, detail="Frontend not found")
-
 @app.post("/api/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
     """Authenticate user and return JWT token"""
@@ -291,6 +267,30 @@ async def export_markdown(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# Serve frontend for all non-API routes (must be last!)
+@app.get("/{full_path:path}")
+async def serve_frontend(full_path: str):
+    """Serve the Vue.js frontend for all non-API routes"""
+    # If it's an API route, let it be handled by other endpoints
+    if full_path.startswith("api/"):
+        raise HTTPException(status_code=404, detail="API endpoint not found")
+    
+    # Check if static directory exists
+    if not os.path.exists("static"):
+        raise HTTPException(status_code=404, detail="Frontend not built")
+    
+    # Try to serve the requested file
+    file_path = os.path.join("static", full_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # For SPA routing, serve index.html for any non-file requests
+    index_path = os.path.join("static", "index.html")
+    if os.path.isfile(index_path):
+        return FileResponse(index_path)
+    
+    raise HTTPException(status_code=404, detail="Frontend not found")
 
 def signal_handler(sig, frame):
     """Handle SIGINT (Ctrl+C) and SIGTERM signals"""
